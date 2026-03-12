@@ -11,3 +11,6 @@ Aluno: Gabriel Sampaio
 - Node.js
 - OpenSpec
 - Xano
+
+![alt text](image.png)
+![alt text](image-1.png)
