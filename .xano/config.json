@@ -1,8 +1,8 @@
 {
   "instanceName": "x8ki-letl-twmt",
   "instanceDisplay": "Free Instance",
-  "workspaceName": "SampasWorkspace",
-  "workspaceId": 124059,
+  "workspaceName": "edutrack-ai",
+  "workspaceId": 122411,
   "branch": "v1",
   "paths": {
     "functions": "functions",

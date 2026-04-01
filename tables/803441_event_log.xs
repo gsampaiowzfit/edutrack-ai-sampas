@@ -4,7 +4,9 @@ table event_log {
 
   schema {
     int id
-    timestamp created_at?=now
+    timestamp created_at?=now {
+      visibility = "private"
+    }
   
     // Reference to the user who performed the action.
     int user_id? {

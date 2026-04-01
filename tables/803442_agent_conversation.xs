@@ -4,7 +4,9 @@ table agent_conversation {
 
   schema {
     int id
-    timestamp created_at?=now
+    timestamp created_at?=now {
+      visibility = "private"
+    }
   
     // The user who owns this conversation thread.
     int owner_user? {

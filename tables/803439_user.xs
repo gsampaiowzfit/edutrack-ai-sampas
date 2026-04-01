@@ -4,10 +4,15 @@ table user {
 
   schema {
     int id
-    timestamp created_at?=now
+    timestamp created_at?=now {
+      visibility = "private"
+    }
+  
     text name filters=trim
     email? email filters=trim|lower
-    password? password filters=min:8|minAlpha:1|minDigit:1
+    password? password filters=min:8|minAlpha:1|minDigit:1 {
+      visibility = "internal"
+    }
   
     // Reference to the company the user belongs to.
     int account_id? {
@@ -17,13 +22,22 @@ table user {
     // The role of the user within their company (e.g., 'admin', 'member').
     enum role? {
       values = ["admin", "member"]
+      visibility = "private"
     }
   
     object password_reset? {
       schema {
-        password token?
-        timestamp? expiration?
-        bool used?
+        password token? {
+          visibility = "internal"
+        }
+      
+        timestamp? expiration? {
+          visibility = "internal"
+        }
+      
+        bool used? {
+          visibility = "internal"
+        }
       }
     }
   }

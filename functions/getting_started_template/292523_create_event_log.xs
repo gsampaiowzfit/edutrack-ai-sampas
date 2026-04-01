@@ -1,4 +1,3 @@
-// Meu primeiro comentário via VSCODE 
 // Creates a record in the event log table
 // 
 function "Getting Started Template/create_event_log" {
