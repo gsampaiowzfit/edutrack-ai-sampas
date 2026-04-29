@@ -290,7 +290,7 @@
   {
     "id": 395648,
     "path": "apis/subjects/api_group.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_group",
     "staged": false,
     "sha256": "00d834a435b07114fc13960e2a38add3be6be58ae76d7b30a9af426aa926c16a",
@@ -299,7 +299,7 @@
   {
     "id": 3785326,
     "path": "apis/subjects/3784200_subject_create_POST.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "11ddd3ca1da12c2412b726dd68254943d3ee0a56b99166bc055389e71ef11fd5",
@@ -317,7 +317,7 @@
   {
     "id": 3785211,
     "path": "apis/subjects/3784202_subject_update_PATCH.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "3ab10ff273ada08e1e39289320f15be6f62f2e5f849988f0dadbaf377018f0b0",
@@ -326,7 +326,7 @@
   {
     "id": 3785327,
     "path": "apis/subjects/3784203_subject_delete_DELETE.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "fe681c86c0e912450b61e6a380f9556e5224ec7c33ada1b0e79d90f3e460c83a",
