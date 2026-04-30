@@ -17,7 +17,7 @@ table subject {
     text? description filters=trim
     text? semester filters=trim
     text? status filters=trim
-    bool deleted?=false {
+    bool deleted? {
       visibility = "private"
     }
   }
