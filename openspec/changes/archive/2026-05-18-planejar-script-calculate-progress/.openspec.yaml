@@ -1,0 +1,4 @@
+name: planejar-script-calculate-progress
+description: Change to plan implementation of scripts/calculate_progress.py that computes progress percentage and returns JSON
+owner: TBD
+created: 2026-05-18
