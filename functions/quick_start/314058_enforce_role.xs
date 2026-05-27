@@ -1,5 +1,5 @@
 // Checks that a user has the appropriate role level. This example sets a hierarchy of roles, and a user must pass the minimum level to execute.
-function "Getting Started Template/role-based access control" {
+function "Quick Start/enforce_role" {
   input {
     // The ID of the user to check the role for.
     int user_id
@@ -15,7 +15,7 @@ function "Getting Started Template/role-based access control" {
     }
   
     // Retrieve the user's role from the database.
-    db.get user {
+    db.get "" {
       field_name = "id"
       field_value = $input.user_id
       output = ["role"]

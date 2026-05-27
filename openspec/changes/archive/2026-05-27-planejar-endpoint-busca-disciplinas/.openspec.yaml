@@ -1,0 +1,5 @@
+name: planejar-endpoint-busca-disciplinas
+title: Planejar endpoint de busca de disciplinas
+author: GitHub Copilot
+date: 2026-05-22
+description: Change to plan an API endpoint to search subjects by name or by overdue tasks (integrates Python logic).

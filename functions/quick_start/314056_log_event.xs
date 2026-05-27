@@ -1,12 +1,8 @@
 // Creates a record in the event log table
-// 
-function "Getting Started Template/create_event_log" {
+function "Quick Start/log_event" {
   input {
     // Unique identifier for the user who performed the action.
     int user_id
-  
-    // Unique identifier for the account associated with the event.
-    int account_id
   
     // A description of the action performed by the user (e.g., 'login', 'created_invoice').
     text action
@@ -17,11 +13,10 @@ function "Getting Started Template/create_event_log" {
 
   stack {
     // Add a new user event log entry
-    db.add event_log {
+    db.add "" {
       data = {
         created_at: "now"
         user_id   : $input.user_id
-        account_id: $input.account_id
         action    : $input.action
         metadata  : $input.metadata
       }
