@@ -17,7 +17,7 @@ table academic_tasks {
     date due_date
     text status filters=trim
     int subject_id {
-      table = ""
+      table = "subject"
     }
   
     int user_id {

@@ -1,5 +1,5 @@
 // List academic subjects owned by the authenticated user
-query "subject/list_app" verb=GET {
+query "subject/list" verb=GET {
   api_group = "Subjects"
   auth = "user"
 
@@ -15,10 +15,10 @@ query "subject/list_app" verb=GET {
         "created_at"
         "name"
         "code"
-        "description"
-        "semester"
         "status"
         "owner_id"
+        "teacher"
+        "workload"
       ]
     } as $subjects
   }

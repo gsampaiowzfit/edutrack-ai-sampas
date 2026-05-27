@@ -5,6 +5,8 @@ import utils
 st.set_page_config(page_title="Meu Perfil", page_icon="👤")
 st.title("👤 Meu Perfil")
 
+utils.load_session()
+
 if "profile_updated_toast" in st.session_state and st.session_state["profile_updated_toast"]:
     st.toast("Perfil atualizado com sucesso!", icon="✅")
     del st.session_state["profile_updated_toast"]
