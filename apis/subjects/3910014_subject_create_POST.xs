@@ -1,5 +1,5 @@
 // Create a new academic subject owned by the authenticated user
-query "subject/create_app" verb=POST {
+query "subject/create" verb=POST {
   api_group = "Subjects"
   auth = "user"
 
