@@ -5,12 +5,14 @@ import utils
 st.set_page_config(page_title="Tarefas", page_icon="📝")
 st.title("Gerenciamento de Tarefas")
 
+utils.load_session()
+
 # Verifica autenticação
 if "auth_token" not in st.session_state or not st.session_state["auth_token"]:
     st.warning("⚠️ Você precisa estar logado para acessar as tarefas. Vá até a página principal (Dashboard) para entrar ou cadastrar-se.")
 else:
     # Buscar disciplinas reais do Xano para vincular às tarefas
-    disciplinas = utils.xano_get("subjects", "subject/list_app")
+    disciplinas = utils.xano_get("subjects", "subject/list")
     
     # Inicializa tarefas locais na sessão se não existirem
     if "tarefas_locais" not in st.session_state:

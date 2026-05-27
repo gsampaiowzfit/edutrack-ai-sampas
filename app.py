@@ -5,11 +5,8 @@ import utils
 st.set_page_config(page_title="EduTrack AI", page_icon="🎓")
 st.title("🎓 EduTrack AI")
 
-# Inicializa estados de sessão
-if "auth_token" not in st.session_state:
-    st.session_state["auth_token"] = None
-if "user_name" not in st.session_state:
-    st.session_state["user_name"] = None
+# Inicializa e carrega estados de sessão persistentes
+utils.load_session()
 
 # Sidebar
 st.sidebar.header("Menu")
@@ -17,8 +14,7 @@ st.sidebar.header("Menu")
 if st.session_state["auth_token"]:
     st.sidebar.success(f"Logado como: {st.session_state['user_name']}")
     if st.sidebar.button("Sair"):
-        st.session_state["auth_token"] = None
-        st.session_state["user_name"] = None
+        utils.clear_session()
         st.rerun()
 
     menu_option = st.sidebar.radio("Navegar", ["Dashboard", "Disciplinas", "Tarefas"])
@@ -27,7 +23,7 @@ if st.session_state["auth_token"]:
         st.write(f"Olá, **{st.session_state['user_name']}**! Bem-vindo ao seu assistente acadêmico!")
         
         # Buscar dados reais do Xano para as métricas
-        disciplinas = utils.xano_get("subjects", "subject/list_app")
+        disciplinas = utils.xano_get("subjects", "subject/list")
         total_disciplinas = len(disciplinas) if disciplinas else 0
         
         col1, col2 = st.columns(2)
@@ -56,6 +52,7 @@ else:
                                 st.session_state["user_name"] = me["name"]
                             else:
                                 st.session_state["user_name"] = email
+                            utils.save_session(res["authToken"], st.session_state["user_name"])
                             st.success("Login realizado com sucesso!")
                             st.rerun()
                         else:
@@ -137,6 +134,7 @@ else:
                         if res and "authToken" in res:
                             st.session_state["auth_token"] = res["authToken"]
                             st.session_state["user_name"] = nome
+                            utils.save_session(res["authToken"], nome)
                             st.success("Conta criada e logada com sucesso!")
                             st.rerun()
                         else:

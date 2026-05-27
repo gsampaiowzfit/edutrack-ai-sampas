@@ -4,22 +4,17 @@ table subject {
 
   schema {
     int id
-    timestamp created_at?=now {
-      visibility = "private"
-    }
-  
+    timestamp created_at?=now
     int owner_id {
       table = "user"
     }
   
     text name filters=trim
     text? code filters=trim
-    text? description filters=trim
-    text? semester filters=trim
     text? status filters=trim
-    bool deleted? {
-      visibility = "private"
-    }
+    text? teacher filters=trim
+    int? workload
+    bool deleted?
   }
 
   index = [

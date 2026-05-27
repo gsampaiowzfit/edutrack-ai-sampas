@@ -1,14 +1,15 @@
+// user addon
 addon user {
   input {
     int user_id? {
-      table = ""
+      table = "user"
     }
   }
 
   stack {
-    db.query "" {
+    db.query user {
       where = $db.user.id == $input.user_id
-      return = {type: "single"}
+      return = {type: "list"}
     }
   }
 }
