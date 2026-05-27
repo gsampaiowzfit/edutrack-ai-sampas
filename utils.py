@@ -13,7 +13,7 @@ API_GROUPS = {
 def get_headers():
     headers = {"Content-Type": "application/json"}
     if "auth_token" in st.session_state:
-        headers["Authorization"] = f"Bearer {st.session_state['auth_token']}"
+        headers["Authorization"] =  f"Bearer {st.session_state['auth_token']}"
     return headers
 
 def check_auth_error(response):

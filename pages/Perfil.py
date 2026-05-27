@@ -26,13 +26,14 @@ else:
                 submitted = st.form_submit_button("Salvar Alterações")
                 if submitted:
                     if nome and email:
-                        res = utils.xano_patch("auth", "auth/update_profile_app", {"name": nome, "email": email})
-                        if res:
-                            st.session_state["user_name"] = nome
-                            st.session_state["profile_updated_toast"] = True
-                            st.rerun()
-                        else:
-                            st.error("Erro ao atualizar o perfil. Verifique se o e-mail já está em uso.")
+                        with st.spinner("Atualizando perfil..."):
+                            res = utils.xano_patch("auth", "auth/update_profile_app", {"name": nome, "email": email})
+                            if res:
+                                st.session_state["user_name"] = nome
+                                st.session_state["profile_updated_toast"] = True
+                                st.rerun()
+                            else:
+                                st.error("Erro ao atualizar o perfil. Verifique se o e-mail já está em uso.")
                     else:
                         st.warning("Preencha todos os campos obrigatórios.")
                         
@@ -45,12 +46,13 @@ else:
             st.write("Para redefinir sua senha, solicite um código de verificação.")
             
             if st.button("Solicitar Código de Redefinição"):
-                res = utils.xano_post("auth", "auth/request_password_reset_app", {"email": me.get("email")})
-                if res and "token" in res:
-                    st.session_state["reset_token_simulado"] = res["token"]
-                    st.success(f"Código enviado com sucesso! Para fins de teste, seu código é: **{res['token']}**")
-                else:
-                    st.error("Erro ao solicitar código de redefinição.")
+                with st.spinner("Solicitando código..."):
+                    res = utils.xano_post("auth", "auth/request_password_reset_app", {"email": me.get("email")})
+                    if res and "token" in res:
+                        st.session_state["reset_token_simulado"] = res["token"]
+                        st.success(f"Código enviado com sucesso! Para fins de teste, seu código é: **{res['token']}**")
+                    else:
+                        st.error("Erro ao solicitar código de redefinição.")
             
             if st.session_state["reset_token_simulado"]:
                 st.markdown("---")
@@ -65,25 +67,26 @@ else:
                         if codigo and nova_senha and confirmar_senha:
                             if nova_senha == confirmar_senha:
                                 if len(nova_senha) >= 8:
-                                    res_reset = utils.xano_post("auth", "auth/reset_password_app", {
-                                        "email": me.get("email"),
-                                        "token": codigo,
-                                        "password": nova_senha
-                                    })
-                                    if res_reset:
-                                        st.success("Senha alterada com sucesso!")
-                                        st.session_state["reset_token_simulado"] = None
-                                        
-                                        import time
-                                        st.toast("Senha alterada! Encerrando sessão por segurança...", icon="🔒")
-                                        with st.spinner("Encerrando sessão com segurança..."):
-                                            time.sleep(1.5)
+                                    with st.spinner("Alterando sua senha..."):
+                                        res_reset = utils.xano_post("auth", "auth/reset_password_app", {
+                                            "email": me.get("email"),
+                                            "token": codigo,
+                                            "password": nova_senha
+                                        })
+                                        if res_reset:
+                                            st.success("Senha alterada com sucesso!")
+                                            st.session_state["reset_token_simulado"] = None
                                             
-                                        st.session_state["auth_token"] = None
-                                        st.session_state["user_name"] = None
-                                        st.rerun()
-                                    else:
-                                        st.error("Código de verificação incorreto ou expirado.")
+                                            import time
+                                            st.toast("Senha alterada! Encerrando sessão por segurança...", icon="🔒")
+                                            with st.spinner("Encerrando sessão com segurança..."):
+                                                time.sleep(1.5)
+                                                
+                                            st.session_state["auth_token"] = None
+                                            st.session_state["user_name"] = None
+                                            st.rerun()
+                                        else:
+                                            st.error("Código de verificação incorreto ou expirado.")
                                 else:
                                     st.warning("A senha deve ter no mínimo 8 caracteres.")
                             else:

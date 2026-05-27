@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import streamlit as st
 import utils
 
@@ -28,11 +29,12 @@ else:
                         "description": desc_completa,
                         "status": "active"
                     }
-                    res = utils.xano_post("subjects", "subject/create_app", data)
-                    if res:
-                        st.success(f"Disciplina '{nome}' cadastrada com sucesso no Xano!")
-                    else:
-                        st.error("Erro ao cadastrar a disciplina no Xano.")
+                    with st.spinner("Salvando disciplina..."):
+                        res = utils.xano_post("subjects", "subject/create_app", data)
+                        if res:
+                            st.success(f"Disciplina '{nome}' cadastrada com sucesso no Xano!")
+                        else:
+                            st.error("Erro ao cadastrar a disciplina no Xano.")
                 else:
                     st.warning("Por favor, preencha o nome da disciplina e o professor.")
 
