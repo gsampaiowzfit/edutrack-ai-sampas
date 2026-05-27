@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import streamlit as st
 import utils
 
@@ -38,16 +39,17 @@ else:
             submitted = st.form_submit_button("Criar")
             if submitted:
                 if titulo:
-                    nova_t = {
-                        "id": len(st.session_state["tarefas_locais"]) + 1,
-                        "titulo": titulo,
-                        "disciplina": materia,
-                        "prazo": str(prazo),
-                        "concluida": False
-                    }
-                    st.session_state["tarefas_locais"].append(nova_t)
-                    st.success(f"Tarefa '{titulo}' criada com sucesso!")
-                    st.rerun()
+                    with st.spinner("Criando tarefa..."):
+                        nova_t = {
+                            "id": len(st.session_state["tarefas_locais"]) + 1,
+                            "titulo": titulo,
+                            "disciplina": materia,
+                            "prazo": str(prazo),
+                            "concluida": False
+                        }
+                        st.session_state["tarefas_locais"].append(nova_t)
+                        st.success(f"Tarefa '{titulo}' criada com sucesso!")
+                        st.rerun()
                 else:
                     st.warning("Por favor, dê um título para a sua tarefa.")
 
@@ -92,8 +94,9 @@ else:
                             st.rerun()
                     with col_del:
                         if st.button("🗑️ Excluir Tarefa", key=f"del_{tarefa['id']}"):
-                            st.session_state["tarefas_locais"].pop(real_idx)
-                            st.success("Tarefa excluída!")
-                            st.rerun()
+                            with st.spinner("Excluindo tarefa..."):
+                                st.session_state["tarefas_locais"].pop(real_idx)
+                                st.success("Tarefa excluída!")
+                                st.rerun()
         else:
             st.info("Nenhuma tarefa encontrada com os filtros selecionados.")

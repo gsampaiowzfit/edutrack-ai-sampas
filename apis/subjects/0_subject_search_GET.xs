@@ -69,7 +69,7 @@ query "subject/search" verb=GET {
         conditional {
           if ($name != null && $name != "") {
             db.query subject {
-              where = $db.subject.owner_id == $auth.id && $db.subject.deleted == false && ($db.subject.name like $name)
+              where = $db.subject.owner_id == $auth.id && $db.subject.deleted == false
               return = {type: "list"}
               output = ["id"]
             } as $subjects_name

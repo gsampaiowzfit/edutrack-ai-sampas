@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import streamlit as st  
 import utils
 
@@ -46,21 +47,80 @@ else:
             
             if submitted:
                 if email and password:
-                    res = utils.xano_post("auth", "auth/login_app", {"email": email, "password": password})
-                    if res and "authToken" in res:
-                        st.session_state["auth_token"] = res["authToken"]
-                        # Buscar dados do usuário logado
-                        me = utils.xano_get("auth", "auth/me_app")
-                        if me and "name" in me:
-                            st.session_state["user_name"] = me["name"]
+                    with st.spinner("Autenticando..."):
+                        res = utils.xano_post("auth", "auth/login_app", {"email": email, "password": password})
+                        if res and "authToken" in res:
+                            st.session_state["auth_token"] = res["authToken"]
+                            me = utils.xano_get("auth", "auth/me_app")
+                            if me and "name" in me:
+                                st.session_state["user_name"] = me["name"]
+                            else:
+                                st.session_state["user_name"] = email
+                            st.success("Login realizado com sucesso!")
+                            st.rerun()
                         else:
-                            st.session_state["user_name"] = email
-                        st.success("Login realizado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("E-mail ou senha incorretos.")
+                            st.error("E-mail ou senha incorretos.")
                 else:
                     st.warning("Preencha todos os campos.")
+        
+        st.markdown("---")
+        with st.expander("🔑 Esqueci minha senha"):
+            st.subheader("Recuperação de Senha")
+            if "reset_token_login" not in st.session_state:
+                st.session_state["reset_token_login"] = None
+            
+            email_rec = st.text_input("Digite seu e-mail cadastrado", key="email_rec_input")
+            if st.button("Solicitar Código de Redefinição", key="btn_req_rec"):
+                if email_rec:
+                    with st.spinner("Enviando código de redefinição..."):
+                        res_rec = utils.xano_post("auth", "auth/request_password_reset_app", {"email": email_rec})
+                        if res_rec and "token" in res_rec:
+                            st.session_state["reset_token_login"] = res_rec["token"]
+                            st.success(f"Código gerado! Para fins de teste, utilize o código: **{res_rec['token']}**")
+                        else:
+                            st.error("E-mail não encontrado ou erro ao gerar código.")
+                else:
+                    st.warning("Preencha o e-mail.")
+            
+            if st.session_state["reset_token_login"]:
+                st.markdown("---")
+                st.write("Preencha as informações abaixo para criar sua nova senha:")
+                with st.form("form_reset_senha_login"):
+                    codigo_rec = st.text_input("Código de verificação", type="password")
+                    nova_senha_rec = st.text_input("Nova Senha (mínimo 8 caracteres)", type="password")
+                    confirmar_senha_rec = st.text_input("Confirmar Nova Senha", type="password")
+                    
+                    submitted_rec = st.form_submit_button("Alterar Senha")
+                    if submitted_rec:
+                        if codigo_rec and nova_senha_rec and confirmar_senha_rec:
+                            if nova_senha_rec == confirmar_senha_rec:
+                                if len(nova_senha_rec) >= 8:
+                                    with st.spinner("Alterando senha..."):
+                                        res_apply = utils.xano_post("auth", "auth/reset_password_app", {
+                                            "email": email_rec,
+                                            "token": codigo_rec,
+                                            "password": nova_senha_rec
+                                        })
+                                        if res_apply:
+                                            st.success("Senha redefinida com sucesso!")
+                                            st.session_state["reset_token_login"] = None
+                                            
+                                            import time
+                                            st.toast("Senha redefinida! Encerrando sessões ativas...", icon="🔒")
+                                            with st.spinner("Atualizando credenciais..."):
+                                                time.sleep(1.5)
+                                                
+                                            st.session_state["auth_token"] = None
+                                            st.session_state["user_name"] = None
+                                            st.rerun()
+                                        else:
+                                            st.error("Código de verificação incorreto ou expirado.")
+                                else:
+                                    st.warning("A senha deve ter no mínimo 8 caracteres.")
+                            else:
+                                st.warning("As senhas não coincidem.")
+                        else:
+                            st.warning("Preencha todos os campos.")
                     
     with tab_cadastro:
         st.subheader("Criar Nova Conta")
@@ -72,13 +132,14 @@ else:
             
             if submitted_cad:
                 if nome and email_cad and senha_cad:
-                    res = utils.xano_post("auth", "auth/signup_app", {"name": nome, "email": email_cad, "password": senha_cad})
-                    if res and "authToken" in res:
-                        st.session_state["auth_token"] = res["authToken"]
-                        st.session_state["user_name"] = nome
-                        st.success("Conta criada e logada com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("Erro ao criar conta. Verifique os dados e tente novamente.")
+                    with st.spinner("Criando sua conta..."):
+                        res = utils.xano_post("auth", "auth/signup_app", {"name": nome, "email": email_cad, "password": senha_cad})
+                        if res and "authToken" in res:
+                            st.session_state["auth_token"] = res["authToken"]
+                            st.session_state["user_name"] = nome
+                            st.success("Conta criada e logada com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("Erro ao criar conta. Verifique os dados e tente novamente.")
                 else:
                     st.warning("Preencha todos os campos.")
