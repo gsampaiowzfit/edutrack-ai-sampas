@@ -1,0 +1,5 @@
+name: 2026-05-27-authentication-and-access
+title: Autenticação e Acesso do Usuário
+author: Antigravity
+date: 2026-05-27
+description: Adiciona fluxo completo de autenticação e controle de acesso, incluindo criação de conta, login, manutenção de sessão, visualização/edição de perfil, redefinição de senha e encerramento automático da sessão por expiração do token.
