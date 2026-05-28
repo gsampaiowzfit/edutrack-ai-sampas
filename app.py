@@ -1,35 +1,15 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st  
 import utils
+import re
 
 st.set_page_config(page_title="EduTrack AI", page_icon="🎓")
-st.title("🎓 EduTrack AI")
 
 # Inicializa e carrega estados de sessão persistentes
 utils.load_session()
 
-# Sidebar
-st.sidebar.header("Menu")
-
-if st.session_state["auth_token"]:
-    st.sidebar.success(f"Logado como: {st.session_state['user_name']}")
-    if st.sidebar.button("Sair"):
-        utils.clear_session()
-        st.rerun()
-
-    menu_option = st.sidebar.radio("Navegar", ["Dashboard", "Disciplinas", "Tarefas"])
-    
-    if menu_option == "Dashboard":
-        st.write(f"Olá, **{st.session_state['user_name']}**! Bem-vindo ao seu assistente acadêmico!")
-        
-        # Buscar dados reais do Xano para as métricas
-        disciplinas = utils.xano_get("subjects", "subject/list")
-        total_disciplinas = len(disciplinas) if disciplinas else 0
-        
-        col1, col2 = st.columns(2)
-        col1.metric("Disciplinas Ativas", str(total_disciplinas))
-        col2.metric("Tarefas Pendentes", "0") # Será integrada a seguir
-else:
+def show_login():
+    st.title("🎓 EduTrack AI")
     st.sidebar.info("Faça login para começar.")
     
     tab_login, tab_cadastro = st.tabs(["🔒 Entrar", "📝 Criar Conta"])
@@ -57,6 +37,7 @@ else:
                             st.rerun()
                         else:
                             st.error("E-mail ou senha incorretos.")
+                            st.toast("E-mail ou senha incorretos.", icon="❌")
                 else:
                     st.warning("Preencha todos os campos.")
         
@@ -84,14 +65,14 @@ else:
                 st.write("Preencha as informações abaixo para criar sua nova senha:")
                 with st.form("form_reset_senha_login"):
                     codigo_rec = st.text_input("Código de verificação", type="password")
-                    nova_senha_rec = st.text_input("Nova Senha (mínimo 8 caracteres)", type="password")
+                    nova_senha_rec = st.text_input("Nova Senha", type="password", help="Mínimo de 8 caracteres, com pelo menos uma letra e um número")
                     confirmar_senha_rec = st.text_input("Confirmar Nova Senha", type="password")
                     
                     submitted_rec = st.form_submit_button("Alterar Senha")
                     if submitted_rec:
                         if codigo_rec and nova_senha_rec and confirmar_senha_rec:
                             if nova_senha_rec == confirmar_senha_rec:
-                                if len(nova_senha_rec) >= 8:
+                                if len(nova_senha_rec) >= 8 and re.search(r"[a-zA-Z]", nova_senha_rec) and re.search(r"\d", nova_senha_rec):
                                     with st.spinner("Alterando senha..."):
                                         res_apply = utils.xano_post("auth", "auth/reset_password_app", {
                                             "email": email_rec,
@@ -107,13 +88,13 @@ else:
                                             with st.spinner("Atualizando credenciais..."):
                                                 time.sleep(1.5)
                                                 
-                                            st.session_state["auth_token"] = None
-                                            st.session_state["user_name"] = None
+                                            utils.clear_session()
                                             st.rerun()
                                         else:
                                             st.error("Código de verificação incorreto ou expirado.")
                                 else:
-                                    st.warning("A senha deve ter no mínimo 8 caracteres.")
+                                    st.warning("A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra e um número.")
+                                    st.toast("A senha não atende aos requisitos!", icon="⚠️")
                             else:
                                 st.warning("As senhas não coincidem.")
                         else:
@@ -124,20 +105,61 @@ else:
         with st.form("form_cadastro"):
             nome = st.text_input("Nome Completo")
             email_cad = st.text_input("E-mail")
-            senha_cad = st.text_input("Senha (mínimo 8 caracteres)", type="password")
+            senha_cad = st.text_input("Senha", type="password", help="A senha deve conter no mínimo 8 caracteres, com pelo menos uma letra e um número")
             submitted_cad = st.form_submit_button("Criar Conta")
             
             if submitted_cad:
                 if nome and email_cad and senha_cad:
-                    with st.spinner("Criando sua conta..."):
-                        res = utils.xano_post("auth", "auth/signup_app", {"name": nome, "email": email_cad, "password": senha_cad})
-                        if res and "authToken" in res:
-                            st.session_state["auth_token"] = res["authToken"]
-                            st.session_state["user_name"] = nome
-                            utils.save_session(res["authToken"], nome)
-                            st.success("Conta criada e logada com sucesso!")
-                            st.rerun()
-                        else:
-                            st.error("Erro ao criar conta. Verifique os dados e tente novamente.")
+                    if len(senha_cad) >= 8 and re.search(r"[a-zA-Z]", senha_cad) and re.search(r"\d", senha_cad):
+                        with st.spinner("Criando sua conta..."):
+                            res = utils.xano_post("auth", "auth/signup_app", {"name": nome, "email": email_cad, "password": senha_cad})
+                            if res and "authToken" in res:
+                                st.session_state["auth_token"] = res["authToken"]
+                                st.session_state["user_name"] = nome
+                                utils.save_session(res["authToken"], nome)
+                                st.success("Conta criada e logada com sucesso!")
+                                st.rerun()
+                            else:
+                                st.error("Erro ao criar conta. Verifique os dados e tente novamente.")
+                    else:
+                        st.warning("A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra e um número.")
+                        st.toast("A senha não atende aos requisitos!", icon="⚠️")
                 else:
                     st.warning("Preencha todos os campos.")
+
+def show_dashboard():
+    st.title("🎓 EduTrack AI")
+    st.write(f"Olá, **{st.session_state['user_name']}**! Bem-vindo ao seu assistente acadêmico!")
+    
+    # Buscar dados reais do Xano para as métricas
+    disciplinas = utils.xano_get("subjects", "subject/list")
+    total_disciplinas = len(disciplinas) if disciplinas else 0
+    
+    col1, col2 = st.columns(2)
+    col1.metric("Disciplinas Ativas", str(total_disciplinas))
+    col2.metric("Tarefas Pendentes", "0") # Será integrada a seguir
+
+# Controle de navegação dinâmico usando st.navigation do Streamlit
+if not st.session_state.get("auth_token"):
+    login_page = st.Page(show_login, title="Entrar", icon="🔒")
+    pg = st.navigation([login_page], position="hidden")
+else:
+    # Sidebar global (Cabeçalho e Sair)
+    st.sidebar.header("Menu")
+    st.sidebar.success(f"Logado como: {st.session_state['user_name']}")
+    if st.sidebar.button("Sair", key="global_logout_btn"):
+        utils.clear_session()
+        st.rerun()
+
+    # Define as páginas acessíveis com títulos e ícones customizados
+    dashboard_page = st.Page(show_dashboard, title="Dashboard", icon="🎓")
+    disciplinas_page = st.Page("pages/Disciplinas.py", title="Disciplinas", icon="📚")
+    tarefas_page = st.Page("pages/Tarefas.py", title="Tarefas", icon="📝")
+    perfil_page = st.Page("pages/Perfil.py", title="Meu Perfil", icon="👤")
+    
+    pg = st.navigation({
+        "Acadêmico": [dashboard_page, disciplinas_page, tarefas_page],
+        "Conta": [perfil_page]
+    })
+
+pg.run()

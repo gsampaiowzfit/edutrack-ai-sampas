@@ -3,7 +3,10 @@ import streamlit as st
 import utils
 import datetime
 
-st.set_page_config(page_title="Tarefas", page_icon="📝")
+try:
+    st.set_page_config(page_title="Tarefas", page_icon="📝")
+except Exception:
+    pass
 st.title("Gestão de Tarefas Acadêmicas")
 
 utils.load_session()

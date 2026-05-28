@@ -209,7 +209,7 @@
   {
     "id": 415617,
     "path": "apis/academic_tasks/api_group.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_group",
     "staged": false,
     "sha256": "d138e20a11549d35ed09eebe1e4145eef5982db369c875f86e79b64367283f7c",
@@ -218,7 +218,7 @@
   {
     "id": 3913430,
     "path": "apis/academic_tasks/academic_task_create_POST.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "43719c3c5851210f21305506a650ab3dae1bd94c266876939d579a1345725310",
@@ -227,7 +227,7 @@
   {
     "id": 3913431,
     "path": "apis/academic_tasks/academic_task_list_GET.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "cc5cf9a3b9829b84c2eb33b190d90cc00e8212cd97cac0a91e2e5cb46058e91a",
@@ -236,7 +236,7 @@
   {
     "id": 3913432,
     "path": "apis/academic_tasks/academic_task_update_PATCH.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "5e0f0dd54148cfbaeab9b4d3685ab801108a6a6e53223c417f4012c4460dc198",
@@ -245,7 +245,7 @@
   {
     "id": 3913433,
     "path": "apis/academic_tasks/academic_task_delete_DELETE.xs",
-    "status": "unchanged",
+    "status": "changed",
     "type": "api_endpoint",
     "staged": false,
     "sha256": "164ed6122cb7d7be65420992e0edf35b92910aac5e7a1ee1d9c535d83936f366",

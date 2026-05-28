@@ -1,8 +1,12 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
 import utils
+import re
 
-st.set_page_config(page_title="Meu Perfil", page_icon="👤")
+try:
+    st.set_page_config(page_title="Meu Perfil", page_icon="👤")
+except Exception:
+    pass
 st.title("👤 Meu Perfil")
 
 utils.load_session()
@@ -61,14 +65,14 @@ else:
                 st.subheader("Preencha os dados recebidos")
                 with st.form("form_reset_senha_perfil"):
                     codigo = st.text_input("Código de 6 dígitos recebido", type="password")
-                    nova_senha = st.text_input("Nova Senha (mínimo 8 caracteres)", type="password")
+                    nova_senha = st.text_input("Nova Senha", type="password", help="Mínimo de 8 caracteres, contendo pelo menos uma letra e um número")
                     confirmar_senha = st.text_input("Confirmar Nova Senha", type="password")
                     
                     submitted_senha = st.form_submit_button("Alterar Senha")
                     if submitted_senha:
                         if codigo and nova_senha and confirmar_senha:
                             if nova_senha == confirmar_senha:
-                                if len(nova_senha) >= 8:
+                                if len(nova_senha) >= 8 and re.search(r"[a-zA-Z]", nova_senha) and re.search(r"\d", nova_senha):
                                     with st.spinner("Alterando sua senha..."):
                                         res_reset = utils.xano_post("auth", "auth/reset_password_app", {
                                             "email": me.get("email"),
@@ -84,13 +88,13 @@ else:
                                             with st.spinner("Encerrando sessão com segurança..."):
                                                 time.sleep(1.5)
                                                 
-                                            st.session_state["auth_token"] = None
-                                            st.session_state["user_name"] = None
+                                            utils.clear_session()
                                             st.rerun()
                                         else:
                                             st.error("Código de verificação incorreto ou expirado.")
                                 else:
-                                    st.warning("A senha deve ter no mínimo 8 caracteres.")
+                                    st.warning("A senha deve ter no mínimo 8 caracteres, contendo pelo menos uma letra e um número.")
+                                    st.toast("A senha não atende aos requisitos!", icon="⚠️")
                             else:
                                 st.warning("As senhas não coincidem.")
                         else:
