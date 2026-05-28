@@ -9,7 +9,8 @@ INSTANCE_URL = "https://x8ki-letl-twmt.n7.xano.io"
 API_GROUPS = {
     "auth": f"{INSTANCE_URL}/api:B0UmRltb",
     "members": f"{INSTANCE_URL}/api:IZNk6f4y",
-    "subjects": f"{INSTANCE_URL}/api:C3FBb9tZ"
+    "subjects": f"{INSTANCE_URL}/api:C3FBb9tZ",
+    "academic_tasks": f"{INSTANCE_URL}/api:TasksGroup"
 }
 
 def get_headers():
