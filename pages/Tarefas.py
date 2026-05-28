@@ -1,104 +1,296 @@
 # pyrefly: ignore [missing-import]
 import streamlit as st
 import utils
+import datetime
 
 st.set_page_config(page_title="Tarefas", page_icon="📝")
-st.title("Gerenciamento de Tarefas")
+st.title("Gestão de Tarefas Acadêmicas")
 
 utils.load_session()
 
-# Verifica autenticação
+if "active_tab_tarefas" not in st.session_state:
+    st.session_state["active_tab_tarefas"] = "listar"
+if "edit_task_id" not in st.session_state:
+    st.session_state["edit_task_id"] = None
+if "tarefas_cache" not in st.session_state:
+    st.session_state["tarefas_cache"] = None
+if "disciplinas_cache" not in st.session_state:
+    st.session_state["disciplinas_cache"] = None
+
+@st.dialog("Confirmar Exclusão de Tarefa")
+def confirmar_exclusao_tarefa(task):
+    st.write(f"Tem certeza que deseja excluir a tarefa **'{task.get('title')}'**?")
+    st.write("Esta ação removerá permanentemente a tarefa do servidor.")
+    st.write("")
+    
+    col_yes, col_no = st.columns(2)
+    with col_yes:
+        if st.button("Sim, Excluir", use_container_width=True, type="primary"):
+            with st.spinner("Excluindo..."):
+                res_del = utils.xano_delete("academic_tasks", f"academic_task/delete?task_id={task.get('id')}")
+                if res_del:
+                    st.toast("🗑️ Tarefa excluída com sucesso!")
+                    st.session_state["tarefas_cache"] = None
+                    st.rerun()
+                else:
+                    st.error("Erro ao excluir a tarefa no servidor.")
+    with col_no:
+        if st.button("Cancelar", use_container_width=True):
+            st.rerun()
+
 if "auth_token" not in st.session_state or not st.session_state["auth_token"]:
     st.warning("⚠️ Você precisa estar logado para acessar as tarefas. Vá até a página principal (Dashboard) para entrar ou cadastrar-se.")
 else:
-    # Buscar disciplinas reais do Xano para vincular às tarefas
-    disciplinas = utils.xano_get("subjects", "subject/list")
-    
-    # Inicializa tarefas locais na sessão se não existirem
-    if "tarefas_locais" not in st.session_state:
-        st.session_state["tarefas_locais"] = [
-            {"id": 1, "titulo": "Estudar Streamlit e No-Code", "disciplina": "Geral", "prazo": "2026-05-30", "concluida": False},
-            {"id": 2, "titulo": "Revisar metadados do XanoScript", "disciplina": "Geral", "prazo": "2026-05-28", "concluida": True}
-        ]
+    with st.spinner("Carregando dados..."):
+        if st.session_state["tarefas_cache"] is None:
+            st.session_state["tarefas_cache"] = utils.xano_get("academic_tasks", "academic_task/list") or []
+        if st.session_state["disciplinas_cache"] is None:
+            st.session_state["disciplinas_cache"] = utils.xano_get("subjects", "subject/list") or []
 
-    tab_lista, tab_nova = st.tabs(["📋 Minhas Tarefas", "➕ Nova Tarefa"])
+    tarefas = st.session_state["tarefas_cache"]
+    disciplinas = st.session_state["disciplinas_cache"]
 
-    with tab_nova:
-        st.subheader("Criar Nova Tarefa")
-        
+    editing_task = None
+    if st.session_state["edit_task_id"]:
+        editing_task = next((t for t in tarefas if t.get("id") == st.session_state["edit_task_id"]), None)
+        if not editing_task:
+            st.session_state["edit_task_id"] = None
+
+    col_tab1, col_tab2 = st.columns(2)
+    with col_tab1:
+        if st.button("📋 Listar Tarefas", use_container_width=True, type="primary" if st.session_state["active_tab_tarefas"] == "listar" else "secondary"):
+            st.session_state["active_tab_tarefas"] = "listar"
+            st.session_state["edit_task_id"] = None
+            st.rerun()
+    with col_tab2:
+        tab_label = "✏️ Editar Tarefa" if editing_task else "➕ Nova Tarefa"
+        if st.button(tab_label, use_container_width=True, type="primary" if st.session_state["active_tab_tarefas"] == "nova" else "secondary"):
+            st.session_state["active_tab_tarefas"] = "nova"
+            st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if st.session_state["active_tab_tarefas"] == "nova":
         if not disciplinas:
-            st.info("💡 Dica: Cadastre uma Disciplina primeiro na página 'Disciplinas' para poder vinculá-la a uma tarefa!")
-            lista_materias = ["Geral"]
+            st.warning("⚠️ Você precisa cadastrar ao menos uma disciplina na aba 'Disciplinas' antes de gerenciar tarefas!")
         else:
-            lista_materias = [d.get("name") for d in disciplinas]
-            lista_materias.append("Geral")
-            
-        with st.form("form_tarefa"):
-            titulo = st.text_input("Título da Tarefa", placeholder="Ex: Resolver lista de exercícios")
-            materia = st.selectbox("Vincular à Disciplina", lista_materias)
-            prazo = st.date_input("Data de Entrega")
-            
-            submitted = st.form_submit_button("Criar")
-            if submitted:
-                if titulo:
-                    with st.spinner("Criando tarefa..."):
-                        nova_t = {
-                            "id": len(st.session_state["tarefas_locais"]) + 1,
-                            "titulo": titulo,
-                            "disciplina": materia,
-                            "prazo": str(prazo),
-                            "concluida": False
-                        }
-                        st.session_state["tarefas_locais"].append(nova_t)
-                        st.success(f"Tarefa '{titulo}' criada com sucesso!")
-                        st.rerun()
-                else:
-                    st.warning("Por favor, dê um título para a sua tarefa.")
-
-    with tab_lista:
-        st.subheader("Lista de Atividades")
-        
-        # Filtros na UI
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            search = st.text_input("Buscar tarefa...", placeholder="Digite para filtrar...")
-        with col2:
-            filtro = st.selectbox("Status", ["Todas", "Pendente", "Concluída"])
-            
-        st.markdown("---")
-        
-        # Filtragem das tarefas
-        tarefas_filtradas = st.session_state["tarefas_locais"]
-        if search:
-            tarefas_filtradas = [t for t in tarefas_filtradas if search.lower() in t["titulo"].lower()]
-        if filtro == "Pendente":
-            tarefas_filtradas = [t for t in tarefas_filtradas if not t["concluida"]]
-        elif filtro == "Concluída":
-            tarefas_filtradas = [t for t in tarefas_filtradas if t["concluida"]]
-
-        # Renderização dinâmica das tarefas em cards
-        if tarefas_filtradas:
-            for idx, tarefa in enumerate(tarefas_filtradas):
-                card_title = f"{'✅' if tarefa['concluida'] else '⏳'} {tarefa['titulo']}"
-                with st.expander(card_title, expanded=not tarefa['concluida']):
-                    st.write(f"**📚 Disciplina Vinculada:** {tarefa['disciplina']}")
-                    st.write(f"**📅 Prazo de Entrega:** {tarefa['prazo']}")
+            if editing_task:
+                st.subheader(f"✏️ Editar Tarefa: {editing_task.get('title')}")
+                form_key = f"form_editar_tarefa_{editing_task.get('id')}"
+                default_title = editing_task.get("title", "")
+                default_desc = editing_task.get("description", "")
+                
+                try:
+                    default_due = datetime.datetime.strptime(editing_task.get("due_date")[:10], "%Y-%m-%d").date()
+                except Exception:
+                    default_due = datetime.date.today()
                     
-                    # Identificar o índice real no session_state para atualizar status
-                    real_idx = next(i for i, t in enumerate(st.session_state["tarefas_locais"]) if t["id"] == tarefa["id"])
+                default_sub_id = editing_task.get("subject_id")
+                default_status = editing_task.get("status", "pending")
+                btn_label = "Salvar Alterações"
+            else:
+                st.subheader("➕ Cadastrar Nova Tarefa")
+                form_key = "form_cadastrar_tarefa"
+                default_title = ""
+                default_desc = ""
+                default_due = datetime.date.today()
+                default_sub_id = disciplinas[0].get("id")
+                default_status = "pending"
+                btn_label = "Criar Tarefa"
+
+            sub_map = {d.get("name"): d.get("id") for d in disciplinas}
+            sub_list = list(sub_map.keys())
+            
+            sub_id_to_name = {d.get("id"): d.get("name") for d in disciplinas}
+            initial_sub_name = sub_id_to_name.get(default_sub_id, sub_list[0])
+
+            with st.form(form_key):
+                title = st.text_input("Título da Tarefa", value=default_title, placeholder="Ex: Exercícios de Álgebra Linear")
+                description = st.text_area("Descrição (Opcional)", value=default_desc, placeholder="Ex: Resolver os exercícios de 1 a 10 da lista 3")
+                due_date = st.date_input("Data de Entrega", value=default_due)
+                selected_sub_name = st.selectbox("Disciplina Vinculada", options=sub_list, index=sub_list.index(initial_sub_name))
+                
+                status = "pending"
+                if editing_task:
+                    status_options = {"Pendente": "pending", "Em andamento": "in_progress", "Concluída": "completed"}
+                    inverse_status = {v: k for k, v in status_options.items()}
+                    selected_status_label = st.selectbox("Status da Tarefa", options=list(status_options.keys()), index=list(status_options.values()).index(default_status))
+                    status = status_options[selected_status_label]
+
+                col_btn_save, col_btn_cancel = st.columns([3, 1])
+                with col_btn_save:
+                    submitted = st.form_submit_button(btn_label, use_container_width=True)
+                with col_btn_cancel:
+                    cancelar = st.form_submit_button("Cancelar", use_container_width=True)
+
+                if submitted:
+                    if title:
+                        sub_id = sub_map[selected_sub_name]
+                        if editing_task:
+                            edit_data = {
+                                "task_id": editing_task.get("id"),
+                                "title": title,
+                                "description": description,
+                                "due_date": str(due_date),
+                                "status": status
+                            }
+                            with st.spinner("Salvando alterações..."):
+                                res = utils.xano_patch("academic_tasks", "academic_task/update", edit_data)
+                                if res:
+                                    st.toast(f"✅ Tarefa '{title}' atualizada com sucesso!", icon="✏️")
+                                    st.session_state["edit_task_id"] = None
+                                    st.session_state["tarefas_cache"] = None
+                                    st.session_state["active_tab_tarefas"] = "listar"
+                                    st.rerun()
+                                else:
+                                    st.error("Erro ao atualizar a tarefa no servidor.")
+                        else:
+                            create_data = {
+                                "title": title,
+                                "description": description,
+                                "due_date": str(due_date),
+                                "subject_id": sub_id
+                            }
+                            with st.spinner("Criando tarefa..."):
+                                res = utils.xano_post("academic_tasks", "academic_task/create", create_data)
+                                if res:
+                                    st.toast(f"🎉 Tarefa '{title}' criada com sucesso!", icon="📝")
+                                    st.session_state["tarefas_cache"] = None
+                                    st.session_state["active_tab_tarefas"] = "listar"
+                                    st.rerun()
+                                else:
+                                    st.error("Erro ao cadastrar tarefa no servidor.")
+                    else:
+                        st.warning("Por favor, preencha o título da tarefa.")
+
+                if cancelar:
+                    st.session_state["edit_task_id"] = None
+                    st.session_state["active_tab_tarefas"] = "listar"
+                    st.rerun()
+
+    elif st.session_state["active_tab_tarefas"] == "listar":
+        if not tarefas:
+            st.info("Nenhuma tarefa cadastrada ainda. Use a aba ao lado para criar a primeira!")
+        else:
+            col_search, col_filter, col_group = st.columns([2, 1, 1])
+            with col_search:
+                search_query = st.text_input("🔍 Buscar tarefas por título...", placeholder="Digite para filtrar...")
+            with col_filter:
+                status_filter = st.selectbox("Status", ["Todas", "Pendente", "Em andamento", "Concluída"])
+            with col_group:
+                group_by = st.selectbox("Agrupar por", ["Nenhum", "Disciplina", "Prazo"])
+
+            st.markdown("---")
+
+            status_map_inverse = {"Pendente": "pending", "Em andamento": "in_progress", "Concluída": "completed"}
+            
+            tarefas_filtradas = tarefas
+            if search_query:
+                tarefas_filtradas = [t for t in tarefas_filtradas if search_query.lower() in t.get("title", "").lower()]
+            if status_filter != "Todas":
+                tarefas_filtradas = [t for t in tarefas_filtradas if t.get("status") == status_map_inverse[status_filter]]
+
+            sub_id_to_name = {d.get("id"): d.get("name") for d in disciplinas}
+            hoje = datetime.date.today()
+
+            def process_due_date(t):
+                try:
+                    return datetime.datetime.strptime(t.get("due_date")[:10], "%Y-%m-%d").date()
+                except Exception:
+                    return hoje
+
+            def render_task_card(t):
+                due_date_obj = process_due_date(t)
+                is_overdue = due_date_obj < hoje and t.get("status") != "completed"
+                
+                border_color = "red" if is_overdue else "rgba(49, 51, 63, 0.2)"
+                
+                with st.container(border=True):
+                    col_c1, col_c2 = st.columns([3, 1])
+                    with col_c1:
+                        status_labels = {"pending": "⏳ Pendente", "in_progress": "🔄 Em andamento", "completed": "✅ Concluída"}
+                        status_disp = status_labels.get(t.get("status", "pending"), "⏳ Pendente")
+                        
+                        st.subheader(f"{t.get('title')}")
+                        st.caption(f"📚 **Disciplina:** {sub_id_to_name.get(t.get('subject_id'), 'Geral')} | {status_disp}")
+                        
+                        if t.get("description"):
+                            st.write(t.get("description"))
+                            
+                        date_str = due_date_obj.strftime("%d/%m/%Y")
+                        if is_overdue:
+                            st.markdown(f"<span style='color:red; font-weight:bold;'>🚨 PRAZO VENCIDO: {date_str}</span>", unsafe_allow_html=True)
+                        else:
+                            st.write(f"📅 **Prazo:** {date_str}")
                     
-                    col_status, col_del = st.columns([2, 1])
-                    with col_status:
-                        # Checkbox para marcar status de conclusão
-                        marcado = st.checkbox("Marcar como Concluída", value=tarefa["concluida"], key=f"check_{tarefa['id']}")
-                        if marcado != tarefa["concluida"]:
-                            st.session_state["tarefas_locais"][real_idx]["concluida"] = marcado
+                    with col_c2:
+                        st.write("")
+                        
+                        is_completed = t.get("status") == "completed"
+                        check_label = "Concluída"
+                        marcado = st.checkbox(check_label, value=is_completed, key=f"status_check_{t.get('id')}")
+                        
+                        if marcado != is_completed:
+                            new_status = "completed" if marcado else "pending"
+                            update_data = {
+                                "task_id": t.get("id"),
+                                "title": t.get("title"),
+                                "description": t.get("description", ""),
+                                "due_date": t.get("due_date")[:10] if t.get("due_date") else None,
+                                "status": new_status
+                            }
+                            with st.spinner("Atualizando status..."):
+                                res = utils.xano_patch("academic_tasks", "academic_task/update", update_data)
+                                if res:
+                                    st.session_state["tarefas_cache"] = None
+                                    st.toast(f"Tarefa marcada como {check_label.lower()}!" if marcado else "Tarefa marcada como pendente!")
+                                    st.rerun()
+                        
+                        if st.button("✏️ Editar", key=f"edit_t_{t.get('id')}", use_container_width=True):
+                            st.session_state["edit_task_id"] = t.get("id")
+                            st.session_state["active_tab_tarefas"] = "nova"
                             st.rerun()
-                    with col_del:
-                        if st.button("🗑️ Excluir Tarefa", key=f"del_{tarefa['id']}"):
-                            with st.spinner("Excluindo tarefa..."):
-                                st.session_state["tarefas_locais"].pop(real_idx)
-                                st.success("Tarefa excluída!")
-                                st.rerun()
-        else:
-            st.info("Nenhuma tarefa encontrada com os filtros selecionados.")
+                            
+                        if st.button("🗑️ Excluir", key=f"del_t_{t.get('id')}", use_container_width=True):
+                            confirmar_exclusao_tarefa(t)
+
+            if not tarefas_filtradas:
+                st.info("Nenhuma tarefa corresponde aos filtros aplicados.")
+            else:
+                if group_by == "Nenhum":
+                    for t in tarefas_filtradas:
+                        render_task_card(t)
+                        st.write("")
+                elif group_by == "Disciplina":
+                    grouped = {}
+                    for t in tarefas_filtradas:
+                        sub_name = sub_id_to_name.get(t.get("subject_id"), "Outras")
+                        if sub_name not in grouped:
+                            grouped[sub_name] = []
+                        grouped[sub_name].append(t)
+                        
+                    for sub_name, task_list in grouped.items():
+                        st.markdown(f"### 📚 {sub_name}")
+                        for t in task_list:
+                            render_task_card(t)
+                            st.write("")
+                elif group_by == "Prazo":
+                    grouped_dates = {"🚨 Vencidas": [], "📅 Hoje": [], "🔮 Futuras": [], "✅ Concluídas": []}
+                    for t in tarefas_filtradas:
+                        if t.get("status") == "completed":
+                            grouped_dates["✅ Concluídas"].append(t)
+                        else:
+                            due_date_obj = process_due_date(t)
+                            if due_date_obj < hoje:
+                                grouped_dates["🚨 Vencidas"].append(t)
+                            elif due_date_obj == hoje:
+                                grouped_dates["📅 Hoje"].append(t)
+                            else:
+                                grouped_dates["🔮 Futuras"].append(t)
+                                
+                    for category, task_list in grouped_dates.items():
+                        if task_list:
+                            st.markdown(f"### {category}")
+                            for t in task_list:
+                                render_task_card(t)
+                                st.write("")
