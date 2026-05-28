@@ -24,8 +24,7 @@ def get_headers():
 
 def check_auth_error(response):
     if response.status_code in [401, 403]:
-        st.session_state["auth_token"] = None
-        st.session_state["user_name"] = None
+        clear_session()
         st.rerun()
 
 def xano_get(group_name, endpoint):
@@ -45,7 +44,8 @@ def xano_post(group_name, endpoint, data):
         response = requests.post(url, json=data, headers=get_headers())
         if response.status_code in [200, 201]:
             return response.json()
-        check_auth_error(response)
+        if "login" not in endpoint and "signup" not in endpoint:
+            check_auth_error(response)
         st.warning(f"[DEBUG] {endpoint} → {response.status_code}: {response.text}")
         return None
     except Exception as e:
@@ -100,10 +100,7 @@ def load_session():
                 pass
 
 def clear_session():
-    if "auth_token" in st.session_state:
-        st.session_state["auth_token"] = None
-    if "user_name" in st.session_state:
-        st.session_state["user_name"] = None
+    st.session_state.clear()
     if os.path.exists(SESSION_FILE):
         try:
             os.remove(SESSION_FILE)
