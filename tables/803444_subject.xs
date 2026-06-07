@@ -11,8 +11,9 @@ table subject {
   
     text name filters=trim
     text? code filters=trim
-    text? status filters=trim
+    text? status?=active filters=trim
     text? teacher filters=trim
+    text? semester filters=trim
     int? workload
     bool deleted?
   }

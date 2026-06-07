@@ -7,6 +7,7 @@ query "academic_task/create" verb=POST {
     text description?
     date due_date
     int subject_id
+    text? priority
   }
 
   stack {
@@ -41,6 +42,7 @@ query "academic_task/create" verb=POST {
         description: $input.description
         due_date   : $input.due_date
         status     : "pending"
+        priority   : $input.priority
         subject_id : $input.subject_id
         user_id    : $auth.id
       }

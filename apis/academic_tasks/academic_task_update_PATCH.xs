@@ -8,6 +8,7 @@ query "academic_task/update" verb=PATCH {
     text? description
     date? due_date
     text? status
+    text? priority
   }
 
   stack {
@@ -39,6 +40,7 @@ query "academic_task/update" verb=PATCH {
         description: $input.description
         due_date: $input.due_date
         status: $input.status
+        priority: $input.priority
         updated_at: "now"
       }|filter_empty_text:""
     } as $updated_task

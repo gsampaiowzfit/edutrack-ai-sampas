@@ -74,6 +74,14 @@ The system SHALL allow students to remove their task records.
 - **WHEN** student requests task deletion
 - **THEN** system removes the task record from the database
 
+### Requirement: Task priority
+
+The system SHALL allow students to assign a priority level to their tasks.
+
+#### Scenario: Student sets a task priority
+- **WHEN** student creates or updates a task with a priority (low, medium, high)
+- **THEN** system stores the priority and displays it on the task card
+
 ### Requirement: Task data model
 
 The system SHALL store academic tasks with required and optional fields.
@@ -81,5 +89,5 @@ The system SHALL store academic tasks with required and optional fields.
 #### Scenario: Task schema validation
 
 - **WHEN** task is created or updated
-- **THEN** system validates: id (auto), title (required, text), description (optional, text), due_date (required, date), status (required, text), subject_id (required, reference), user_id (required, reference), created_at (auto), updated_at (auto)
+- **THEN** system validates: id (auto), title (required, text), description (optional, text), due_date (required, date), status (required, text), priority (optional, text), subject_id (required, reference), user_id (required, reference), created_at (auto), updated_at (auto)
 
