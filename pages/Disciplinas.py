@@ -87,6 +87,7 @@ else:
             default_prof = editing_sub.get("teacher", "")
             default_carga = int(editing_sub.get("workload") or 60)
             default_codigo = editing_sub.get("code", "")
+            default_semestre = editing_sub.get("semester", "")
             if default_codigo == "N/A":
                 default_codigo = ""
             btn_label = "Salvar Alterações"
@@ -97,11 +98,13 @@ else:
             default_prof = ""
             default_carga = 60
             default_codigo = ""
+            default_semestre = ""
             btn_label = "Salvar Disciplina"
 
         with st.form(form_key):
             nome = st.text_input("Nome da Disciplina", value=default_nome, placeholder="Ex: Algoritmos e Estruturas de Dados")
             professor = st.text_input("Nome do Professor", value=default_prof, placeholder="Ex: Dr. Hamilton")
+            semestre = st.text_input("Semestre/Período Letivo (Opcional)", value=default_semestre, placeholder="Ex: 2026.1 ou 1º Semestre")
             carga_horaria = st.number_input("Carga Horária (em horas)", min_value=1, max_value=400, value=default_carga, step=1)
             codigo = st.text_input("Código da Matéria (Opcional)", value=default_codigo, placeholder="Ex: CC-3021")
             
@@ -109,7 +112,6 @@ else:
             with col_btn_save:
                 submitted = st.form_submit_button(btn_label, use_container_width=True)
             with col_btn_cancel:
-                # Botão para cancelar a operação de forma amigável
                 cancelar = st.form_submit_button("Cancelar", use_container_width=True)
 
             if submitted:
@@ -120,9 +122,10 @@ else:
                             "subject_id": editing_sub.get("id"),
                             "name": nome,
                             "teacher": professor,
+                            "semester": semestre,
                             "workload": int(carga_horaria),
                             "code": codigo if codigo else "N/A",
-                            "status": "active" # Injeta o status para evitar erro de Missing Param do Xano!
+                            "status": editing_sub.get("status", "active")
                         }
                         with st.spinner("Salvando alterações..."):
                             res = utils.xano_patch("subjects", "subject/update", edit_data)
@@ -140,6 +143,7 @@ else:
                             "name": nome,
                             "code": codigo if codigo else "N/A",
                             "teacher": professor,
+                            "semester": semestre,
                             "workload": int(carga_horaria),
                             "status": "active"
                         }
@@ -162,18 +166,26 @@ else:
 
     # ==================== ABA DE LISTAGEM ====================
     elif st.session_state["active_tab"] == "listar":
-        st.subheader("Minhas Disciplinas Ativas")
+        # Buscar tarefas para calcular progresso e atrasadas
+        tarefas = st.session_state.get("tarefas_cache")
+        if tarefas is None:
+            with st.spinner("Carregando tarefas para progresso..."):
+                tarefas = utils.xano_get("academic_tasks", "academic_task/list") or []
+                st.session_state["tarefas_cache"] = tarefas
 
-        tarefas = st.session_state.get("tarefas_locais", [])
-        hoje = str(datetime.date.today())
-        disciplinas_atrasadas = {
-            t["disciplina"] for t in tarefas 
-            if not t.get("concluida") and t.get("prazo") < hoje
-        }
+        hoje = datetime.date.today()
+        disciplinas_atrasadas = set()
+        for t in tarefas:
+            if t.get("status") != "completed":
+                try:
+                    due_date_str = t.get("due_date")[:10]
+                    due_date_obj = datetime.datetime.strptime(due_date_str, "%Y-%m-%d").date()
+                    if due_date_obj < hoje:
+                        disciplinas_atrasadas.add(t.get("subject_id"))
+                except Exception:
+                    pass
 
         if disciplinas:
-            pass
-
             # --- FILTROS DE BUSCA ---
             col_search, col_filter = st.columns([2, 1])
             with col_search:
@@ -181,7 +193,7 @@ else:
             with col_filter:
                 overdue_only = st.checkbox("⚠️ Apenas com tarefas em atraso", value=False)
 
-            # --- APLICAR FILTROS ---
+            # --- APLICAR FILTROS INICIAIS ---
             disciplinas_filtradas = disciplinas
             if search_query:
                 disciplinas_filtradas = [
@@ -191,33 +203,109 @@ else:
             if overdue_only:
                 disciplinas_filtradas = [
                     d for d in disciplinas_filtradas 
-                    if d.get("name") in disciplinas_atrasadas
+                    if d.get("id") in disciplinas_atrasadas
                 ]
 
-            # --- RENDERIZAR OS CARDS PREMIUM ---
-            if disciplinas_filtradas:
-                for disp in disciplinas_filtradas:
-                    with st.container(border=True):
-                        col_info, col_actions = st.columns([3, 1])
-                        with col_info:
-                            st.subheader(f"📚 {disp.get('name')}")
-                            st.write(f"👤 **Professor:** {disp.get('teacher', 'Não informado')}")
-                            st.write(f"⏱️ **Carga Horária:** {disp.get('workload', 'Não informada')} horas")
-                            if disp.get("code") and disp.get("code") != "N/A":
-                                st.caption(f"🔑 Código da Matéria: {disp.get('code')}")
-                            
-                            if disp.get("name") in disciplinas_atrasadas:
-                                st.warning("⚠️ Esta disciplina possui tarefas pendentes em atraso!")
-                        with col_actions:
-                            st.write("")
-                            # Redireciona a edição para a aba de cadastro com o mesmo form!
-                            if st.button("✏️ Editar", key=f"edit_btn_{disp.get('id')}", use_container_width=True):
-                                st.session_state["edit_subject_id"] = disp.get("id")
-                                st.session_state["active_tab"] = "nova"
-                                st.rerun()
-                            if st.button("🗑️ Excluir", key=f"del_btn_{disp.get('id')}", use_container_width=True):
-                                confirmar_exclusao(disp)
-            else:
-                st.info("Nenhuma disciplina encontrada com os filtros selecionados.")
+            # Dividir em Abas: Ativas e Arquivadas
+            tab_ativas, tab_arquivadas = st.tabs(["🟢 Ativas", "📁 Arquivadas"])
+
+            with tab_ativas:
+                ativas = [d for d in disciplinas_filtradas if d.get("status") != "archived"]
+                if ativas:
+                    for disp in ativas:
+                        # Calcular progresso
+                        tarefas_disp = [t for t in tarefas if t.get("subject_id") == disp.get("id")]
+                        total_t = len(tarefas_disp)
+                        concluidas_t = sum(1 for t in tarefas_disp if t.get("status") == "completed")
+                        progresso = (concluidas_t / total_t) if total_t > 0 else 0.0
+
+                        with st.container(border=True):
+                            col_info, col_actions = st.columns([3, 1])
+                            with col_info:
+                                st.subheader(f"📚 {disp.get('name')}")
+                                st.write(f"👤 **Professor:** {disp.get('teacher', 'Não informado')}")
+                                st.write(f"⏱️ **Carga Horária:** {disp.get('workload', 'Não informada')} horas")
+                                if disp.get("semester"):
+                                    st.write(f"📅 **Semestre/Período:** {disp.get('semester')}")
+                                if disp.get("code") and disp.get("code") != "N/A":
+                                    st.caption(f"🔑 Código da Matéria: {disp.get('code')}")
+                                
+                                st.markdown(f"📈 **Progresso:** {concluidas_t}/{total_t} concluídas ({progresso*100:.1f}%)")
+                                st.progress(progresso)
+                                
+                                if disp.get("id") in disciplinas_atrasadas:
+                                    st.warning("⚠️ Esta disciplina possui tarefas pendentes em atraso!")
+                            with col_actions:
+                                st.write("")
+                                if st.button("✏️ Editar", key=f"edit_btn_{disp.get('id')}", use_container_width=True):
+                                    st.session_state["edit_subject_id"] = disp.get("id")
+                                    st.session_state["active_tab"] = "nova"
+                                    st.rerun()
+                                if st.button("📁 Arquivar", key=f"archive_btn_{disp.get('id')}", use_container_width=True):
+                                    edit_data = {
+                                        "subject_id": disp.get("id"),
+                                        "name": disp.get("name"),
+                                        "teacher": disp.get("teacher"),
+                                        "workload": int(disp.get("workload") or 60),
+                                        "code": disp.get("code") or "N/A",
+                                        "semester": disp.get("semester"),
+                                        "status": "archived"
+                                    }
+                                    with st.spinner("Arquivando..."):
+                                        res = utils.xano_patch("subjects", "subject/update", edit_data)
+                                        if res:
+                                            st.toast(f"✅ Disciplina '{disp.get('name')}' arquivada!")
+                                            st.session_state["disciplinas_cache"] = None
+                                            st.rerun()
+                                if st.button("🗑️ Excluir", key=f"del_btn_{disp.get('id')}", use_container_width=True):
+                                    confirmar_exclusao(disp)
+                else:
+                    st.info("Nenhuma disciplina ativa encontrada.")
+
+            with tab_arquivadas:
+                arquivadas = [d for d in disciplinas_filtradas if d.get("status") == "archived"]
+                if arquivadas:
+                    for disp in arquivadas:
+                        # Calcular progresso
+                        tarefas_disp = [t for t in tarefas if t.get("subject_id") == disp.get("id")]
+                        total_t = len(tarefas_disp)
+                        concluidas_t = sum(1 for t in tarefas_disp if t.get("status") == "completed")
+                        progresso = (concluidas_t / total_t) if total_t > 0 else 0.0
+
+                        with st.container(border=True):
+                            col_info, col_actions = st.columns([3, 1])
+                            with col_info:
+                                st.subheader(f"📚 {disp.get('name')} (Arquivada)")
+                                st.write(f"👤 **Professor:** {disp.get('teacher', 'Não informado')}")
+                                st.write(f"⏱️ **Carga Horária:** {disp.get('workload', 'Não informada')} horas")
+                                if disp.get("semester"):
+                                    st.write(f"📅 **Semestre/Período:** {disp.get('semester')}")
+                                if disp.get("code") and disp.get("code") != "N/A":
+                                    st.caption(f"🔑 Código da Matéria: {disp.get('code')}")
+                                
+                                st.markdown(f"📈 **Progresso:** {concluidas_t}/{total_t} concluídas ({progresso*100:.1f}%)")
+                                st.progress(progresso)
+                            with col_actions:
+                                st.write("")
+                                if st.button("📂 Desarquivar", key=f"unarchive_btn_{disp.get('id')}", use_container_width=True):
+                                    edit_data = {
+                                        "subject_id": disp.get("id"),
+                                        "name": disp.get("name"),
+                                        "teacher": disp.get("teacher"),
+                                        "workload": int(disp.get("workload") or 60),
+                                        "code": disp.get("code") or "N/A",
+                                        "semester": disp.get("semester"),
+                                        "status": "active"
+                                    }
+                                    with st.spinner("Desarquivando..."):
+                                        res = utils.xano_patch("subjects", "subject/update", edit_data)
+                                        if res:
+                                            st.toast(f"✅ Disciplina '{disp.get('name')}' reativada!")
+                                            st.session_state["disciplinas_cache"] = None
+                                            st.rerun()
+                                if st.button("🗑️ Excluir", key=f"del_btn_arq_{disp.get('id')}", use_container_width=True):
+                                    confirmar_exclusao(disp)
+                else:
+                    st.info("Nenhuma disciplina arquivada.")
         else:
             st.info("Nenhuma disciplina cadastrada ainda. Use a aba ao lado para cadastrar a primeira!")

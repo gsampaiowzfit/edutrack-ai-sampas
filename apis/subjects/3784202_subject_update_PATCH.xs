@@ -9,6 +9,7 @@ query "subject/update" verb=PATCH {
     text? code
     text? status
     text? teacher
+    text? semester
     int? workload
   }
 
@@ -54,6 +55,7 @@ query "subject/update" verb=PATCH {
         code       : $input.code
         status     : $input.status
         teacher    : $input.teacher
+        semester   : $input.semester
         workload   : $input.workload
       }|filter_empty_text:""
     } as $updated_subject

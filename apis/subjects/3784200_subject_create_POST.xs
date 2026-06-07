@@ -8,6 +8,7 @@ query "subject/create" verb=POST {
     text? code
     text? status
     text? teacher
+    text? semester
     int? workload
   }
 
@@ -34,6 +35,7 @@ query "subject/create" verb=POST {
         code    : $input.code
         status  : $input.status
         teacher : $input.teacher
+        semester: $input.semester
         workload: $input.workload
       }
     } as $subject

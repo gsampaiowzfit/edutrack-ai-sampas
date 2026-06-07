@@ -4,18 +4,13 @@ table academic_tasks {
 
   schema {
     int id
-    timestamp created_at?=now {
-      visibility = "private"
-    }
-  
-    timestamp updated_at?=now {
-      visibility = "private"
-    }
-  
+    timestamp created_at?=now
+    timestamp updated_at?=now
     text title filters=trim
     text? description filters=trim
     date due_date
     text status filters=trim
+    text? priority?=medium filters=trim
     int subject_id {
       table = "subject"
     }

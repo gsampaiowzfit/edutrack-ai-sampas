@@ -113,6 +113,12 @@ else:
                 due_date = st.date_input("Data de Entrega", value=default_due)
                 selected_sub_name = st.selectbox("Disciplina Vinculada", options=sub_list, index=sub_list.index(initial_sub_name))
                 
+                # Seleção de Prioridade
+                prio_options = {"Baixa": "low", "Média": "medium", "Alta": "high"}
+                default_prio = editing_task.get("priority", "medium") if editing_task else "medium"
+                selected_prio_label = st.selectbox("Prioridade da Tarefa", options=list(prio_options.keys()), index=list(prio_options.values()).index(default_prio))
+                priority = prio_options[selected_prio_label]
+
                 status = "pending"
                 if editing_task:
                     status_options = {"Pendente": "pending", "Em andamento": "in_progress", "Concluída": "completed"}
@@ -135,7 +141,8 @@ else:
                                 "title": title,
                                 "description": description,
                                 "due_date": str(due_date),
-                                "status": status
+                                "status": status,
+                                "priority": priority
                             }
                             with st.spinner("Salvando alterações..."):
                                 res = utils.xano_patch("academic_tasks", "academic_task/update", edit_data)
@@ -152,7 +159,8 @@ else:
                                 "title": title,
                                 "description": description,
                                 "due_date": str(due_date),
-                                "subject_id": sub_id
+                                "subject_id": sub_id,
+                                "priority": priority
                             }
                             with st.spinner("Criando tarefa..."):
                                 res = utils.xano_post("academic_tasks", "academic_task/create", create_data)
@@ -214,8 +222,12 @@ else:
                         status_labels = {"pending": "⏳ Pendente", "in_progress": "🔄 Em andamento", "completed": "✅ Concluída"}
                         status_disp = status_labels.get(t.get("status", "pending"), "⏳ Pendente")
                         
+                        prio = t.get("priority", "medium")
+                        prio_labels = {"low": "🟢 Prioridade Baixa", "medium": "🟡 Prioridade Média", "high": "🔴 Prioridade Alta"}
+                        prio_disp = prio_labels.get(prio, "🟡 Prioridade Média")
+                        
                         st.subheader(f"{t.get('title')}")
-                        st.caption(f"📚 **Disciplina:** {sub_id_to_name.get(t.get('subject_id'), 'Geral')} | {status_disp}")
+                        st.caption(f"📚 **Disciplina:** {sub_id_to_name.get(t.get('subject_id'), 'Geral')} | {status_disp} | {prio_disp}")
                         
                         if t.get("description"):
                             st.write(t.get("description"))
@@ -240,7 +252,8 @@ else:
                                 "title": t.get("title"),
                                 "description": t.get("description", ""),
                                 "due_date": t.get("due_date")[:10] if t.get("due_date") else None,
-                                "status": new_status
+                                "status": new_status,
+                                "priority": t.get("priority", "medium")
                             }
                             with st.spinner("Atualizando status..."):
                                 res = utils.xano_patch("academic_tasks", "academic_task/update", update_data)
