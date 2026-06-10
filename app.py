@@ -121,20 +121,145 @@ st.markdown(
         backdrop-filter: blur(10px);
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
     }
+    
+    /* Estilos para a Tela de Boas-Vindas */
+    .welcome-container {
+        max-width: 900px;
+        margin: 20px auto;
+        text-align: center;
+    }
+    .welcome-hero {
+        background: linear-gradient(135deg, rgba(108, 92, 231, 0.08) 0%, rgba(162, 155, 254, 0.03) 100%);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 20px;
+        padding: 40px 25px;
+        margin-bottom: 30px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.25);
+    }
+    .welcome-features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 35px;
+    }
+    .welcome-feature-card {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 22px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: left;
+        backdrop-filter: blur(5px);
+    }
+    .welcome-feature-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(108, 92, 231, 0.4);
+        background: rgba(30, 41, 59, 0.7);
+        box-shadow: 0 8px 20px -10px rgba(108, 92, 231, 0.3);
+    }
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 12px;
+        display: inline-block;
+    }
+    .feature-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 6px;
+    }
+    .feature-desc {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        line-height: 1.5;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 def show_login():
-    st.markdown('<div class="brand-title">🎓 EduTrack AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-subtitle">Gestão acadêmica inteligente com IA</div>', unsafe_allow_html=True)
+    if "login_view" not in st.session_state:
+        st.session_state["login_view"] = "welcome"
+        
+    view = st.session_state["login_view"]
     
-    st.sidebar.info("Faça login para começar.")
-    
-    tab_login, tab_cadastro = st.tabs(["🔒 Entrar", "📝 Criar Conta"])
-    
-    with tab_login:
+    if view == "welcome":
+        # Botões sempre visíveis na barra lateral
+        st.sidebar.markdown("### Acesso Rápido")
+        if st.sidebar.button("🔒 Entrar na Conta", key="side_login_btn", use_container_width=True, type="primary"):
+            st.session_state["login_view"] = "login"
+            st.rerun()
+        if st.sidebar.button("📝 Criar Conta", key="side_signup_btn", use_container_width=True):
+            st.session_state["login_view"] = "signup"
+            st.rerun()
+        st.sidebar.markdown("---")
+        st.sidebar.info("Utilize os botões acima ou no painel principal para acessar.")
+        
+        st.markdown(
+            """
+            <div class="welcome-container">
+                <div class="welcome-hero">
+                    <div class="brand-title">🎓 EduTrack AI</div>
+                    <div class="brand-subtitle" style="margin-bottom: 15px;">Gestão acadêmica inteligente com IA</div>
+                    <p style="font-size: 1.05rem; color: #cbd5e1; max-width: 650px; margin: 0 auto; line-height: 1.6;">
+                        A plataforma moderna que simplifica sua rotina acadêmica. Organize suas disciplinas, 
+                        controle seus prazos de tarefas e impulsione seu aprendizado com insights gerados por inteligência artificial.
+                    </p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        # Grid de Funcionalidades
+        st.markdown(
+            """
+            <div class="welcome-features">
+                <div class="welcome-feature-card">
+                    <span class="feature-icon">📚</span>
+                    <div class="feature-title">Gestão de Disciplinas</div>
+                    <div class="feature-desc">Gerencie suas matérias do semestre, acompanhe o status de cada uma e centralize suas informações in um único lugar.</div>
+                </div>
+                <div class="welcome-feature-card">
+                    <span class="feature-icon">📅</span>
+                    <div class="feature-title">Controle de Tarefas</div>
+                    <div class="feature-desc">Cadastre e monitore prazos de entrega de trabalhos, projetos e provas com marcadores de prioridade e controle de atrasos.</div>
+                </div>
+                <div class="welcome-feature-card">
+                    <span class="feature-icon">📊</span>
+                    <div class="feature-title">Relatórios e IA</div>
+                    <div class="feature-desc">Visualize seu progresso de tarefas concluídas e obtenha relatórios analíticos de desempenho em tempo real.</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        
+        st.markdown("<h4 style='text-align: center; margin-bottom: 25px; color: #f8fafc; font-weight: 600;'>Como você deseja prosseguir?</h4>", unsafe_allow_html=True)
+        
+        col_btn1, col_btn2 = st.columns([1, 1])
+        with col_btn1:
+            if st.button("🔒 Entrar na Minha Conta", use_container_width=True, type="primary", key="welcome_login_btn"):
+                st.session_state["login_view"] = "login"
+                st.rerun()
+        with col_btn2:
+            if st.button("📝 Criar Conta Gratuita", use_container_width=True, key="welcome_signup_btn"):
+                st.session_state["login_view"] = "signup"
+                st.rerun()
+                
+    elif view == "login":
+        # Botão discreto para voltar à tela inicial
+        if st.button("← Voltar para Apresentação", key="back_to_welcome_login"):
+            st.session_state["login_view"] = "welcome"
+            st.rerun()
+            
+        st.markdown('<div class="brand-title">🎓 EduTrack AI</div>', unsafe_allow_html=True)
+        st.markdown('<div class="brand-subtitle">Acesse sua conta para continuar</div>', unsafe_allow_html=True)
+        
+        st.sidebar.info("Insira suas credenciais de acesso.")
+        
         st.subheader("Login")
         with st.form("form_login"):
             email = st.text_input("E-mail", placeholder="seuemail@exemplo.com")
@@ -161,6 +286,16 @@ def show_login():
                 else:
                     st.warning("Preencha todos os campos.")
         
+        # Link rápido para cadastrar nova conta
+        st.write("")
+        col_l1, col_l2 = st.columns([3, 2])
+        with col_l1:
+            st.markdown("<p style='margin-top: 6px; font-size: 0.95rem; color: #94a3b8;'>Não possui uma conta?</p>", unsafe_allow_html=True)
+        with col_l2:
+            if st.button("Cadastre-se aqui", key="go_to_signup_btn", use_container_width=True):
+                st.session_state["login_view"] = "signup"
+                st.rerun()
+
         st.markdown("---")
         with st.expander("🔑 Esqueci minha senha"):
             st.subheader("Recuperação de Senha")
@@ -219,8 +354,18 @@ def show_login():
                                 st.warning("As senhas não coincidem.")
                         else:
                             st.warning("Preencha todos os campos.")
-                    
-    with tab_cadastro:
+                            
+    elif view == "signup":
+        # Botão discreto para voltar à tela inicial
+        if st.button("← Voltar para Apresentação", key="back_to_welcome_signup"):
+            st.session_state["login_view"] = "welcome"
+            st.rerun()
+            
+        st.markdown('<div class="brand-title">🎓 EduTrack AI</div>', unsafe_allow_html=True)
+        st.markdown('<div class="brand-subtitle">Crie sua conta gratuita em segundos</div>', unsafe_allow_html=True)
+        
+        st.sidebar.info("Preencha o formulário para criar sua conta acadêmica.")
+        
         st.subheader("Criar Nova Conta")
         with st.form("form_cadastro"):
             nome = st.text_input("Nome Completo", placeholder="Seu Nome")
@@ -246,6 +391,16 @@ def show_login():
                         st.toast("A senha não atende aos requisitos!", icon="⚠️")
                 else:
                     st.warning("Preencha todos os campos.")
+
+        # Link rápido para voltar à tela de Login
+        st.write("")
+        col_s1, col_s2 = st.columns([3, 2])
+        with col_s1:
+            st.markdown("<p style='margin-top: 6px; font-size: 0.95rem; color: #94a3b8;'>Já possui uma conta?</p>", unsafe_allow_html=True)
+        with col_s2:
+            if st.button("Faça login aqui", key="go_to_login_btn", use_container_width=True):
+                st.session_state["login_view"] = "login"
+                st.rerun()
 
 def show_dashboard():
     st.markdown('<div class="brand-title" style="text-align: left;">🎓 EduTrack AI</div>', unsafe_allow_html=True)
